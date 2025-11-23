@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-func GenerateServerCertificate(host string,caCert *x509.Certificate,caKey *rsa.PrivateKey)  *tls.Certificate {
+func GenerateServerCertificate(host string,caCert *x509.Certificate,caKey any)  *tls.Certificate {
 	priv,_ := rsa.GenerateKey(rand.Reader,2048)
 	tmpl := x509.Certificate{
 		SerialNumber: big.NewInt(time.Now().UnixNano()),

@@ -1,7 +1,6 @@
 package mitm
 
 import (
-	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"io"
@@ -14,10 +13,10 @@ import (
 
 type Proxy struct {
 	caCert *x509.Certificate
-	caKey *rsa.PrivateKey
+	caKey any
 }
 
-func NewProxy(caCert *x509.Certificate,caKey *rsa.PrivateKey) (*Proxy,error) {
+func NewProxy(caCert *x509.Certificate,caKey any) (*Proxy,error) {
 	newProxy :=  Proxy{
 		caCert: caCert,
 		caKey: caKey,

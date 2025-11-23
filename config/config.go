@@ -1,7 +1,6 @@
 package config
 
 import (
-	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
@@ -10,7 +9,7 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func LoadCACertAndCAKey(caCertPath,caKeyPath string) (*x509.Certificate,*rsa.PrivateKey,error) {
+func LoadCACertAndCAKey(caCertPath,caKeyPath string) (*x509.Certificate,any,error) {
 	caCertFileBytes,err := os.ReadFile(caCertPath)
 	if err != nil {
 		return nil,nil,fmt.Errorf("readcaCertFile error: %v",err)
@@ -19,19 +18,19 @@ func LoadCACertAndCAKey(caCertPath,caKeyPath string) (*x509.Certificate,*rsa.Pri
 	if caCertBlock == nil {
 		return nil, nil, fmt.Errorf("failed to decode PEM block for CA cert")
 	}
-	caCert,err := x509.ParseCertificate(caCertFileBytes)
+	caCert,err := x509.ParseCertificate(caCertBlock.Bytes)
 	if err != nil {
 		return nil,nil,fmt.Errorf("failed to parse caCert: %v",err)
 	}
 	caKeyBytes,err := os.ReadFile(caKeyPath)
 	if err != nil {
-		fmt.Errorf("readcaKeyFile error: %v",err)
+		return nil,nil,fmt.Errorf("readcaKeyFile error: %v",err)
 	}
 	caKeyBlock,_ := pem.Decode(caKeyBytes)
 	if caKeyBlock == nil {
 		return nil,nil,fmt.Errorf("failed to decode PEM block for CA private Key")
 	}
-	caKey,err := x509.ParsePKCS1PrivateKey(caCertFileBytes)
+	caKey,err := x509.ParsePKCS8PrivateKey(caKeyBlock.Bytes)
 	if err != nil {
 		return nil,nil,fmt.Errorf("failed to parse caKey: %v",err)
 	}
