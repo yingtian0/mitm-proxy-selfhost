@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"strings"
 
 	"github.com/mitm-proxy-selfhost/config"
 	"github.com/mitm-proxy-selfhost/mitm"
@@ -31,21 +30,13 @@ func main() {
 	if err != nil {
 		log.Fatal("NewProxy:",err)
 	}
-
-	http.HandleFunc("/",func (w http.ResponseWriter,r *http.Request) {
-		if strings.ToUpper(r.Method) == "CONNECT" {
-			proxy.HandleConnect(w,r)
-			return 
-		}
-		http.Error(w,"this handler only support connect method",http.StatusMethodNotAllowed)
-	})
-	
 	addr := ":8001"
 	httpServer := &http.Server{
 		Addr: addr,
+		Handler: proxy,
 	}
-	log.Printf("start serve MITM Proxy")
-         if err := httpServer.ListenAndServe();err != nil && err != http.ErrServerClosed{	
-             log.Fatal("failted to serve:",err) 
-         }
+	log.Printf("start serve MITM Proxy on %s", addr)
+	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatal("failed to serve:", err)
+	}
 }
