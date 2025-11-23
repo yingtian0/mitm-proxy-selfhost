@@ -39,7 +39,7 @@ func LoadCACertAndCAKey(caCertPath,caKeyPath string) (*x509.Certificate,*rsa.Pri
 }
 
 func LoadEnv() (error) {
-          err := godotenv.Load("./env")
+          err := godotenv.Load(".env")
 	if err != nil {
 	    return fmt.Errorf("failed to load envfile:%v",err)
 	}

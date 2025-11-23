@@ -39,4 +39,13 @@ func main() {
 		}
 		http.Error(w,"this handler only support connect method",http.StatusMethodNotAllowed)
 	})
+	
+	addr := ":8001"
+	httpServer := &http.Server{
+		Addr: addr,
+	}
+	log.Printf("start serve MITM Proxy")
+         if err := httpServer.ListenAndServe();err != nil && err != http.ErrServerClosed{	
+             log.Fatal("failted to serve:",err) 
+         }
 }
