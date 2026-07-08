@@ -26,14 +26,31 @@ func NewProxy(caCert *x509.Certificate, caKey any) (*Proxy, error) {
 
 func (p *Proxy) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodConnect {
-		p.HandleConnect(w,r)
+		p.HandleConnect(w, r)
+		return
 	}
+	http.Error(w, "this proxy only supports CONNECT", http.StatusMethodNotAllowed)
 }
 
 func (p *Proxy) HandleConnect(w http.ResponseWriter, r *http.Request) {
 	target := r.Host
 	if !strings.Contains(target, ":") {
-		target += ":443" 
+		target += ":443"
+	}
+	hostName := r.Host
+	if strings.Contains(hostName, ":") {
+		var err error
+		hostName, _, err = net.SplitHostPort(hostName)
+		if err != nil {
+			http.Error(w, "invalid CONNECT host: "+err.Error(), http.StatusBadRequest)
+			return
+		}
+	}
+	cert, err := GenerateServerCertificate(hostName, p.caCert, p.caKey)
+	if err != nil {
+		http.Error(w, "failed to generate certificate: "+err.Error(), http.StatusInternalServerError)
+		log.Println("failed to generate certificate:", err)
+		return
 	}
 	serverConn, err := net.DialTimeout("tcp", target, 10*time.Second)
 	if err != nil {
@@ -60,9 +77,9 @@ func (p *Proxy) HandleConnect(w http.ResponseWriter, r *http.Request) {
 		clientConn.Close()
 		return
 	}
-	cert := GenerateServerCertificate(r.Host, p.caCert, p.caKey)
 	tlsClientConn := tls.Server(clientConn, &tls.Config{
 		Certificates: []tls.Certificate{*cert},
+		MinVersion:   tls.VersionTLS12,
 	})
 	if err := tlsClientConn.Handshake(); err != nil {
 		log.Println("tlsClient handshake error:", err)
@@ -70,12 +87,9 @@ func (p *Proxy) HandleConnect(w http.ResponseWriter, r *http.Request) {
 		clientConn.Close()
 		return
 	}
-	hostName := r.Host
-	if strings.Contains(hostName, ":") {
-		hostName, _, _ = net.SplitHostPort(hostName)
-	}
 	tlsServerConn := tls.Client(serverConn, &tls.Config{
-		ServerName: hostName, 
+		ServerName: hostName,
+		MinVersion: tls.VersionTLS12,
 	})
 	if err := tlsServerConn.Handshake(); err != nil {
 		log.Println("tlsServer handshake error:", err)
