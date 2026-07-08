@@ -2,3 +2,5 @@
 
 ca.*
 *.md
+!docs/
+!docs/*.md
